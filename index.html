@@ -138,7 +138,7 @@ canvas {
 
 <div class="header">
   <h1>CIA SECTOR</h1>
-  <p>Shadow cia</p>
+  <p>Shadow CIA</p>
 </div>
 
 <div class="menu">
@@ -201,23 +201,42 @@ buttons.forEach(btn=>{
   });
 });
 
-// نظام الكود
+// نظام الكود مع فرصتين + تنبيه ويبهوك
 const overlay = document.getElementById("codeOverlay");
 const input = document.getElementById("accessCode");
 const submitBtn = document.getElementById("submitCode");
 const errorMsg = document.getElementById("errorMsg");
+const menuDiv = document.querySelector(".menu");
 
 const correctCode = "shadow , 1.07"; // غيّر الكود هنا
+let attempts = 0;
+const maxAttempts = 2;
+
+// رابط ويبهوك Discord
+const webhookURL = "https://discord.com/api/webhooks/1491747672267296920/ddfVl5MLTwwwbkfkt_cQGqsDNCebRFioNBDb_oIVAOu5XQi_r3tooBTO_4XZzyH2eOYP"; 
 
 submitBtn.addEventListener("click", ()=>{
   if(input.value === correctCode){
     overlay.style.display = "none";
-    document.querySelector(".menu").style.display = "block";
+    menuDiv.style.display = "block";
   } else {
-    errorMsg.style.display = "block";
-    overlay.classList.remove("shake");
-    void overlay.offsetWidth; // إعادة تفعيل الأنيميشن
-    overlay.classList.add("shake");
+    attempts++;
+    if(attempts >= maxAttempts){
+      // إرسال تنبيه ويبهوك
+      fetch(webhookURL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ content: `تنبيه : تم محاولة اختراق المستخدم دخل كود خاطئ مرتين .` })
+      });
+      alert("تم تجاوز عدد المحاولات! تم إرسال تنبيه.");
+      input.disabled = true;
+      submitBtn.disabled = true;
+    } else {
+      errorMsg.style.display = "block";
+      overlay.classList.remove("shake");
+      void overlay.offsetWidth; // إعادة تفعيل الأنيميشن
+      overlay.classList.add("shake");
+    }
   }
 });
 </script>
