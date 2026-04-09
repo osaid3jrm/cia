@@ -2,7 +2,7 @@
 <html lang="ar" dir="rtl">
 <head>
 <meta charset="UTF-8">
-<title>CIA Sector</title>
+<title>CIA</title>
 <style>
 body {
   margin:0;
@@ -33,7 +33,7 @@ canvas {
 .menu {
   max-width:400px;
   margin:50px auto;
-  display:none; /* نخفي القائمة أولاً */
+  display:none; 
 }
 .btn {
   display:block;
@@ -122,6 +122,35 @@ canvas {
     transform: scale(1) translateY(0);
   }
 }
+
+/* نافذة تهكير عند تجاوز المحاولات */
+#hackAlert {
+  position:fixed;
+  top:0;
+  left:0;
+  width:100%;
+  height:100%;
+  background:black;
+  color:#00ff9d;
+  font-size:24px;
+  font-family: monospace;
+  display:none;
+  justify-content:center;
+  align-items:center;
+  flex-direction:column;
+  z-index:2000;
+  overflow:hidden;
+}
+#hackAlert canvas {
+  position:absolute;
+  top:0;
+  left:0;
+  z-index:-1;
+}
+#hackAlert p {
+  text-align:center;
+  margin:5px;
+}
 </style>
 </head>
 <body>
@@ -134,6 +163,13 @@ canvas {
   <input type="password" id="accessCode" placeholder="كود الدخول">
   <button id="submitCode">دخول</button>
   <p id="errorMsg" style="color:red; margin-top:10px; display:none;">الكود خاطئ!</p>
+</div>
+
+<!-- نافذة تهكير -->
+<div id="hackAlert">
+  <canvas id="hackMatrix"></canvas>
+  <p>🚨 تم محاولة اختراق 🚨</p>
+  <p>تم إرسال تنبيه </p>
 </div>
 
 <div class="header">
@@ -152,9 +188,10 @@ canvas {
 
 <!-- أصوات -->
 <audio id="clickSound" src="https://www.soundjay.com/button/beep-07.mp3"></audio>
+<audio id="hackSound" src="https://www.soundjay.com/misc/sounds/buzzer-1.mp3"></audio>
 
 <script>
-// Matrix
+// Matrix الأصلي
 const canvas = document.getElementById("matrix");
 const ctx = canvas.getContext("2d");
 canvas.width = window.innerWidth;
@@ -163,33 +200,26 @@ canvas.height = window.innerHeight;
 const letters = "01ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 const fontSize = 16;
 const columns = canvas.width / fontSize;
-
 const drops = [];
 for(let x=0;x<columns;x++) drops[x]=1;
 
 function draw(){
   ctx.fillStyle="rgba(0,0,0,0.05)";
   ctx.fillRect(0,0,canvas.width,canvas.height);
-
   ctx.fillStyle="#00ff9d";
   ctx.font=fontSize+"px monospace";
-
   for(let i=0;i<drops.length;i++){
     let text = letters[Math.floor(Math.random()*letters.length)];
     ctx.fillText(text,i*fontSize,drops[i]*fontSize);
-
-    if(drops[i]*fontSize > canvas.height && Math.random()>0.975){
-      drops[i]=0;
-    }
+    if(drops[i]*fontSize > canvas.height && Math.random()>0.975) drops[i]=0;
     drops[i]++;
   }
 }
 setInterval(draw,33);
 
-// انيميشن انتقال + صوت
+// أزرار الصوت والتحويل
 const buttons = document.querySelectorAll(".btn");
 const clickSound = document.getElementById("clickSound");
-
 buttons.forEach(btn=>{
   btn.addEventListener("click", e=>{
     e.preventDefault();
@@ -201,18 +231,18 @@ buttons.forEach(btn=>{
   });
 });
 
-// نظام الكود مع فرصتين + تنبيه ويبهوك
+// نظام الكود مع فرصتين + نافذة تهكير
 const overlay = document.getElementById("codeOverlay");
 const input = document.getElementById("accessCode");
 const submitBtn = document.getElementById("submitCode");
 const errorMsg = document.getElementById("errorMsg");
 const menuDiv = document.querySelector(".menu");
+const hackAlert = document.getElementById("hackAlert");
+const hackSound = document.getElementById("hackSound");
 
-const correctCode = "shadow , 1.07"; // غيّر الكود هنا
+const correctCode = "shadow , 1.07";
 let attempts = 0;
 const maxAttempts = 2;
-
-// رابط ويبهوك Discord
 const webhookURL = "https://discord.com/api/webhooks/1491747672267296920/ddfVl5MLTwwwbkfkt_cQGqsDNCebRFioNBDb_oIVAOu5XQi_r3tooBTO_4XZzyH2eOYP"; 
 
 submitBtn.addEventListener("click", ()=>{
@@ -221,21 +251,50 @@ submitBtn.addEventListener("click", ()=>{
     menuDiv.style.display = "block";
   } else {
     attempts++;
+    input.value = ""; // مسح المحتوى فوراً
+    errorMsg.style.display = "block";
+    overlay.classList.remove("shake");
+    void overlay.offsetWidth;
+    overlay.classList.add("shake");
+
     if(attempts >= maxAttempts){
       // إرسال تنبيه ويبهوك
       fetch(webhookURL, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ content: `تنبيه : تم محاولة اختراق المستخدم دخل كود خاطئ مرتين .` })
+        body: JSON.stringify({ content: `تنبيه : تم محاولة اختراق المستخدم دخل كود خاطئ مرتين` })
       });
-      alert("تم تجاوز عدد المحاولات! تم إرسال تنبيه.");
-      input.disabled = true;
-      submitBtn.disabled = true;
-    } else {
-      errorMsg.style.display = "block";
-      overlay.classList.remove("shake");
-      void overlay.offsetWidth; // إعادة تفعيل الأنيميشن
-      overlay.classList.add("shake");
+
+      // عرض نافذة تهكير
+      hackAlert.style.display = "flex";
+      overlay.style.display = "none";
+      hackSound.play();
+
+      // Matrix داخل نافذة التهكير
+      const hackCanvas = document.getElementById("hackMatrix");
+      const hackCtx = hackCanvas.getContext("2d");
+      hackCanvas.width = window.innerWidth;
+      hackCanvas.height = window.innerHeight;
+
+      const hackLetters = "01ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+      const hackFont = 20;
+      const hackCols = hackCanvas.width / hackFont;
+      const hackDrops = [];
+      for(let x=0;x<hackCols;x++) hackDrops[x]=1;
+
+      function drawHack(){
+        hackCtx.fillStyle="rgba(0,0,0,0.1)";
+        hackCtx.fillRect(0,0,hackCanvas.width,hackCanvas.height);
+        hackCtx.fillStyle="#00ff9d";
+        hackCtx.font=hackFont+"px monospace";
+        for(let i=0;i<hackDrops.length;i++){
+          let text = hackLetters[Math.floor(Math.random()*hackLetters.length)];
+          hackCtx.fillText(text,i*hackFont,hackDrops[i]*hackFont);
+          if(hackDrops[i]*hackFont > hackCanvas.height && Math.random()>0.975) hackDrops[i]=0;
+          hackDrops[i]++;
+        }
+      }
+      setInterval(drawHack,33);
     }
   }
 });
