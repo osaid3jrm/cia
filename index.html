@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<title>CIA Sector</title>
+<style>
+body {
+  margin:0;
+  background:black;
+  color:#00ff9d;
+  font-family: monospace;
+  overflow:hidden;
+}
+
+/* Matrix Canvas */
+canvas {
+  position:fixed;
+  top:0;
+  left:0;
+  z-index:-1;
+}
+
+/* العنوان */
+.header {
+  text-align:center;
+  margin-top:30px;
+}
+.header h1 {
+  letter-spacing:5px;
+}
+
+/* القائمة */
+.menu {
+  max-width:400px;
+  margin:50px auto;
+  display:none; /* نخفي القائمة أولاً */
+}
+.btn {
+  display:block;
+  text-align:center;
+  padding:20px;
+  margin:15px 0;
+  background:#0b0b0b;
+  border:1px solid #00ff9d40;
+  border-radius:15px;
+  color:#fff;
+  text-decoration:none;
+  font-size:20px;
+  transition:0.3s;
+}
+.btn:hover {
+  background:#00ff9d;
+  color:black;
+  box-shadow:0 0 15px #00ff9d;
+}
+
+/* Fade Transition */
+.fade-out {
+  opacity:0;
+  transition: opacity 0.5s ease-in-out;
+}
+
+/* كود الدخول مع الأنيميشن */
+#codeOverlay {
+  position:fixed;
+  top:0;
+  left:0;
+  width:100%;
+  height:100%;
+  background:black;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  flex-direction:column;
+  z-index:1000;
+  opacity:0;
+  transform: scale(0.8) translateY(-50px);
+  animation: overlayFadeIn 0.8s forwards;
+}
+#codeOverlay input {
+  padding:12px;
+  font-size:18px;
+  border-radius:8px;
+  border:none;
+  outline:none;
+  text-align:center;
+  margin-top:10px;
+  transition:0.3s;
+}
+#codeOverlay input:focus {
+  box-shadow: 0 0 10px #00ff9d;
+}
+#codeOverlay button {
+  margin-top:15px;
+  padding:10px 25px;
+  font-size:18px;
+  border:none;
+  border-radius:8px;
+  background:#00ff9d;
+  color:black;
+  cursor:pointer;
+  transition:0.3s;
+}
+#codeOverlay button:hover {
+  transform: scale(1.1);
+  box-shadow: 0 0 15px #00ff9d;
+}
+
+/* خطأ الكود - هزة */
+@keyframes shake {
+  0% { transform: translateX(0); }
+  25% { transform: translateX(-10px); }
+  50% { transform: translateX(10px); }
+  75% { transform: translateX(-10px); }
+  100% { transform: translateX(0); }
+}
+
+/* fade + scale للظهور */
+@keyframes overlayFadeIn {
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+</style>
+</head>
+<body>
+
+<canvas id="matrix"></canvas>
+
+<!-- نافذة الكود -->
+<div id="codeOverlay">
+  <p>أدخل الكود للدخول :</p>
+  <input type="password" id="accessCode" placeholder="كود الدخول">
+  <button id="submitCode">دخول</button>
+  <p id="errorMsg" style="color:red; margin-top:10px; display:none;">الكود خاطئ!</p>
+</div>
+
+<div class="header">
+  <h1>CIA SECTOR</h1>
+  <p>Shadow cia</p>
+</div>
+
+<div class="menu">
+  <a href="laws.html" class="btn">القوانين</a>
+  <a href="cars.html" class="btn">السيارات</a>
+  <a href="leaders.html" class="btn">القيادات</a>
+  <a href="achievements.html" class="btn">الإنجازات</a>
+  <a href="units.html" class="btn">الوحدات</a>
+  <a href="reports.html" class="btn">البلاغات</a>
+</div>
+
+<!-- أصوات -->
+<audio id="clickSound" src="https://www.soundjay.com/button/beep-07.mp3"></audio>
+
+<script>
+// Matrix
+const canvas = document.getElementById("matrix");
+const ctx = canvas.getContext("2d");
+canvas.width = window.innerWidth;
+canvas.height = window.innerHeight;
+
+const letters = "01ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+const fontSize = 16;
+const columns = canvas.width / fontSize;
+
+const drops = [];
+for(let x=0;x<columns;x++) drops[x]=1;
+
+function draw(){
+  ctx.fillStyle="rgba(0,0,0,0.05)";
+  ctx.fillRect(0,0,canvas.width,canvas.height);
+
+  ctx.fillStyle="#00ff9d";
+  ctx.font=fontSize+"px monospace";
+
+  for(let i=0;i<drops.length;i++){
+    let text = letters[Math.floor(Math.random()*letters.length)];
+    ctx.fillText(text,i*fontSize,drops[i]*fontSize);
+
+    if(drops[i]*fontSize > canvas.height && Math.random()>0.975){
+      drops[i]=0;
+    }
+    drops[i]++;
+  }
+}
+setInterval(draw,33);
+
+// انيميشن انتقال + صوت
+const buttons = document.querySelectorAll(".btn");
+const clickSound = document.getElementById("clickSound");
+
+buttons.forEach(btn=>{
+  btn.addEventListener("click", e=>{
+    e.preventDefault();
+    clickSound.currentTime=0;
+    clickSound.play();
+    const href = btn.getAttribute("href");
+    document.body.classList.add("fade-out");
+    setTimeout(()=>{ window.location.href=href; },500);
+  });
+});
+
+// نظام الكود
+const overlay = document.getElementById("codeOverlay");
+const input = document.getElementById("accessCode");
+const submitBtn = document.getElementById("submitCode");
+const errorMsg = document.getElementById("errorMsg");
+
+const correctCode = "shadow , 1.07"; // غيّر الكود هنا
+
+submitBtn.addEventListener("click", ()=>{
+  if(input.value === correctCode){
+    overlay.style.display = "none";
+    document.querySelector(".menu").style.display = "block";
+  } else {
+    errorMsg.style.display = "block";
+    overlay.classList.remove("shake");
+    void overlay.offsetWidth; // إعادة تفعيل الأنيميشن
+    overlay.classList.add("shake");
+  }
+});
+</script>
+
+</body>
+</html>
